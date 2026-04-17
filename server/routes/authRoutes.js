@@ -40,6 +40,7 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profilePic: user.profilePic,
       },
     })
   } catch (error) {
@@ -77,6 +78,7 @@ router.post('/login', async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profilePic: user.profilePic,
       },
     })
   } catch (error) {
@@ -122,6 +124,7 @@ router.post('/google', async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profilePic: user.profilePic,
       },
     })
   } catch (error) {

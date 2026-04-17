@@ -16,19 +16,73 @@ export function ChatPage() {
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      const local = JSON.parse(localStorage.getItem(`soulchat-msgs-${avatarId}`) || '[]')
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/messages/${avatarId}`)
+        if (response.ok) {
+          let dbMessages = await response.json()
+          
+          // Auto-sync: if DB empty but local exists, sync up
+          if (dbMessages.length === 0 && local.length > 0) {
+            console.log('Syncing local messages up to MongoDB...')
+            for (const msg of local) {
+              const { id, _id, ...msgData } = msg
+              const createRes = await fetch(`${apiBaseUrl}/api/messages/${avatarId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msgData)
+              })
+              if (createRes.ok) {
+                const newMsg = await createRes.json()
+                dbMessages.push(newMsg)
+              }
+            }
+          }
+
+          setMessages(dbMessages)
+          localStorage.setItem(`soulchat-msgs-${avatarId}`, JSON.stringify(dbMessages))
+          return
+        }
+      } catch (err) {}
+      
+      setMessages(local)
+    }
+    loadMessages()
+  }, [avatarId, apiBaseUrl])
+
+  const saveMessage = async (msgObj) => {
+    setMessages(prev => {
+      const updated = [...prev, msgObj]
+      localStorage.setItem(`soulchat-msgs-${avatarId}`, JSON.stringify(updated))
+      return updated
+    })
+
+    try {
+      await fetch(`${apiBaseUrl}/api/messages/${avatarId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msgObj)
+      })
+    } catch (err) {}
+  }
 
   const handleSend = () => {
     if (!inputText.trim()) return
     
     const userMsg = { text: inputText, sender: 'user', id: Date.now() }
-    setMessages(prev => [...prev, userMsg])
+    saveMessage(userMsg)
     setInputText('')
     setIsTyping(true)
     
     // Simulate AI response
     setTimeout(() => {
       const aiResponse = { text: `It's so good to hear from you. I love you ${profile.relation.includes('Mom') ? 'sweetheart' : 'always'}.`, sender: 'ai', id: Date.now() + 1 }
-      setMessages(prev => [...prev, aiResponse])
+      saveMessage(aiResponse)
       setIsTyping(false)
     }, 1500)
   }

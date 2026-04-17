@@ -32,11 +32,18 @@ export function CreateAvatarPage() {
 
   const handlePhotoUpload = (e) => {
     if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map(file => ({
-        file,
-        preview: URL.createObjectURL(file)
-      }))
-      setPhotos(prev => [...prev, ...newFiles])
+      const files = Array.from(e.target.files)
+      
+      files.forEach(file => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setPhotos(prev => [...prev, {
+            file,
+            preview: reader.result
+          }])
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
@@ -59,11 +66,11 @@ export function CreateAvatarPage() {
   }
 
   const navigate = useNavigate()
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
     
-    // Validation
     if (!formData.name) {
       alert("Please enter the loved one's name.")
       return
@@ -80,6 +87,24 @@ export function CreateAvatarPage() {
       phrases: formData.phrases,
       image: photos[0]?.preview || 'https://images.unsplash.com/photo-1544928147-79a2dbc1f389?q=80&w=2000&auto=format&fit=crop',
       tone: formData.traits ? formData.traits.slice(0, 100) : 'Warm, reassuring, and reflective. Speaks softly and includes gentle encouragement.'
+    }
+
+    // Attempt to save to MongoDB backend
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('soulchat-user') || '{}')
+      if (storedUser.email) {
+        const response = await fetch(`${apiBaseUrl}/api/avatars`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: storedUser.email, ...newAvatar })
+        })
+        if (response.ok) {
+          const dbAvatar = await response.json()
+          newAvatar.id = dbAvatar.id // use mongo generated id
+        }
+      }
+    } catch (err) {
+      console.log('Backend unreachable, saving avatar locally only.')
     }
 
     const existing = JSON.parse(localStorage.getItem('soulchat-avatars') || '[]')

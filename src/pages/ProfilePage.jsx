@@ -20,32 +20,63 @@ export function ProfilePage({ onLogout }) {
     email: user.email || '',
   })
   const [profilePic, setProfilePic] = useState(user.profilePic || null)
+  const [tempProfilePic, setTempProfilePic] = useState(null)
   const [showSaved, setShowSaved] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+  const trySaveProfileToDB = async (updatedUser) => {
+    try {
+      await fetch(`${apiBaseUrl}/api/user/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: updatedUser.email,
+          fullName: updatedUser.fullName,
+          profilePic: updatedUser.profilePic
+        })
+      })
+    } catch (err) {
+      console.log('Backend unreachable, saving locally only.')
+    }
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setProfilePic(reader.result)
-        const updatedUser = { ...user, profilePic: reader.result }
-        localStorage.setItem('soulchat-user', JSON.stringify(updatedUser))
-        setUser(updatedUser)
-        window.dispatchEvent(new Event('storage')) // trigger cross-component updates locally if needed
+        setTempProfilePic(reader.result)
+        setIsEditing(true) // Open save/cancel preview options natively
       }
       reader.readAsDataURL(file)
     }
+    // Clear the input value so selecting the same file again triggers onChange
+    e.target.value = ''
   }
 
   const handleSave = () => {
-    const updatedUser = { ...user, ...formData, profilePic }
+    const finalPic = tempProfilePic || profilePic
+    const updatedUser = { ...user, ...formData, profilePic: finalPic }
+    setProfilePic(finalPic)
     localStorage.setItem('soulchat-user', JSON.stringify(updatedUser))
+
+    // Also update the global users array
+    const users = JSON.parse(localStorage.getItem('soulchat-users') || '[]')
+    const userIndex = users.findIndex(u => u.email === user.email)
+    if (userIndex !== -1) {
+      users[userIndex] = { ...users[userIndex], ...formData, profilePic: finalPic }
+      localStorage.setItem('soulchat-users', JSON.stringify(users))
+    }
+
     setUser(updatedUser)
     setIsEditing(false)
     setShowSaved(true)
     setTimeout(() => setShowSaved(false), 3000)
-    window.dispatchEvent(new Event('storage')) // Simple way to notify AuthenticatedLayout
+    window.dispatchEvent(new Event('storage')) // notify AuthenticatedLayout
+    
+    trySaveProfileToDB(updatedUser)
   }
 
   const initials = useMemo(() => {
@@ -80,8 +111,8 @@ export function ProfilePage({ onLogout }) {
               }}
               onClick={() => fileInputRef.current?.click()}
             >
-              {profilePic ? (
-                <img src={profilePic} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {tempProfilePic || profilePic ? (
+                <img src={tempProfilePic || profilePic} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 initials || <User size={40} />
               )}
@@ -169,7 +200,7 @@ export function ProfilePage({ onLogout }) {
                   <button onClick={handleSave} className="landing-btn landing-btn--primary">
                     Save Changes
                   </button>
-                  <button onClick={() => setIsEditing(false)} className="landing-btn landing-btn--ghost">
+                  <button onClick={() => { setIsEditing(false); setTempProfilePic(null); setFormData({ fullName: user.fullName || '', email: user.email || '' }); }} className="landing-btn landing-btn--ghost">
                     Cancel
                   </button>
                 </div>

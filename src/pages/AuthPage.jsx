@@ -151,7 +151,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
       if (isLoginMode) {
         await savePasswordToBrowser(email, password)
-        localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email }))
+        localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
         setStatus({
           loading: false,
           error: '',
@@ -205,7 +205,8 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         setStatus({ loading: false, error: 'Invalid email or password.', success: '' })
         return
       }
-      localStorage.setItem('soulchat-user', JSON.stringify({ fullName: user.fullName, email: user.email }))
+      const { password: userPass, ...safeUser } = user
+      localStorage.setItem('soulchat-user', JSON.stringify(safeUser))
       await savePasswordToBrowser(email, password)
       setStatus({ loading: false, error: '', success: 'Login successful.' })
       onAuthSuccess()
@@ -259,7 +260,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         throw new Error(data.message || 'Google sign-up failed.')
       }
 
-      localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email }))
+      localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
       setStatus({ loading: false, error: '', success: 'Google sign-up successful.' })
       onAuthSuccess()
       navigate(redirectTo, { replace: true })
@@ -270,7 +271,19 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
       ) {
         // Backend unreachable — proceed with local auth for Google
         // We simulate saving a Google user to local storage.
-        localStorage.setItem('soulchat-user', JSON.stringify({ fullName: 'Google User', email: 'guest@google.com' }))
+        const USERS_KEY = 'soulchat-users'
+        const stored = JSON.parse(localStorage.getItem(USERS_KEY) || '[]')
+        const googleEmail = 'guest@google.com'
+        let existingUser = stored.find((u) => u.email === googleEmail)
+        
+        if (!existingUser) {
+          existingUser = { fullName: 'Google User', email: googleEmail }
+          stored.push(existingUser)
+          localStorage.setItem(USERS_KEY, JSON.stringify(stored))
+        }
+
+        const { password: userPass, ...safeUser } = existingUser
+        localStorage.setItem('soulchat-user', JSON.stringify(safeUser))
         setStatus({ loading: false, error: '', success: 'Signed in with Google.' })
         onAuthSuccess()
         navigate(redirectTo, { replace: true })
