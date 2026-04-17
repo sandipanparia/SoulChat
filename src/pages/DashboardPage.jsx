@@ -19,7 +19,7 @@ export function DashboardPage() {
   const [avatarToEdit, setAvatarToEdit] = useState(null)
   const fileInputRef = useRef(null)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
   const user = JSON.parse(localStorage.getItem('soulchat-user') || '{}')
 
   const loadAvatars = async () => {

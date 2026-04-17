@@ -22,7 +22,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
   const isLogin = mode === 'login'
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   const minProcessingDelayMs = 1200
 
@@ -181,6 +181,19 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         error.name === 'TypeError' &&
         (error.message === 'Failed to fetch' || error.message.includes('NetworkError'))
       ) {
+        // Helpful hint for mobile users trying to reach localhost
+        const isLocalHostApi = apiBaseUrl.includes('localhost') || apiBaseUrl.includes('127.0.0.1')
+        const isAccessingViaIP = /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)
+        
+        if (isLocalHostApi && (isAccessingViaIP || window.location.hostname !== 'localhost')) {
+          setStatus({ 
+            loading: false, 
+            error: `Connection failed. You are accessing the app via ${window.location.hostname}, but the API is set to localhost. Please update VITE_API_URL to your laptop's IP address (e.g., http://${window.location.hostname}:5000) so your mobile device can reach the server.`, 
+            success: '' 
+          })
+          return
+        }
+
         await handleLocalAuth(email, password, isLoginMode, fullName)
       } else {
         setStatus({ loading: false, error: error.message, success: '' })

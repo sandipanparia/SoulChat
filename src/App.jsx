@@ -24,7 +24,11 @@ function App() {
       },
       logout: () => {
         localStorage.removeItem(AUTH_KEY)
+        localStorage.removeItem('soulchat-user')
         setIsAuthenticated(false)
+        if (typeof navigator !== 'undefined' && navigator.credentials && navigator.credentials.preventSilentAccess) {
+          navigator.credentials.preventSilentAccess()
+        }
       },
     }),
     [],

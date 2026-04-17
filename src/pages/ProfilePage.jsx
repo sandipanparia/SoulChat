@@ -24,7 +24,7 @@ export function ProfilePage({ onLogout }) {
   const [showSaved, setShowSaved] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
 
   const trySaveProfileToDB = async (updatedUser) => {
     try {
@@ -193,7 +193,7 @@ export function ProfilePage({ onLogout }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="profile-actions">
             <div>
               {isEditing ? (
                 <div style={{ display: 'flex', gap: '1rem' }}>

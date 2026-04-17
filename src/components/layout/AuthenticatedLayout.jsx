@@ -4,13 +4,14 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { motion as Motion, AnimatePresence } from 'framer-motion'
 import {
   HeartHandshake, LayoutDashboard, Sparkles, MessageCircleHeart,
-  Home, LogOut, User
+  Home, LogOut, User, Menu, X
 } from 'lucide-react'
 
 export function AuthenticatedLayout({ onLogout }) {
   const [scrolled, setScrolled] = useState(false)
   const [dropdownVisible, setDropdownVisible] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('soulchat-user'))
@@ -86,6 +87,10 @@ export function AuthenticatedLayout({ onLogout }) {
               <Sparkles size={14} style={{ marginRight: '0.25rem' }} />
               Create Avatar
             </NavLink>
+          </nav>
+
+          {/* Navbar Actions (Profile + Mobile Toggle) */}
+          <div className="landing-navbar__actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {user && (
               <div 
                 style={{ position: 'relative' }}
@@ -155,8 +160,88 @@ export function AuthenticatedLayout({ onLogout }) {
                 </AnimatePresence>
               </div>
             )}
-          </nav>
+
+            {/* Mobile toggle */}
+            <button
+              className="landing-navbar__mobile-toggle"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Toggle menu"
+              id="mobile-menu-toggle"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <Motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="landing-navbar__mobile-menu"
+              id="mobile-menu"
+            >
+              <NavLink 
+                to="/home" 
+                className="landing-navbar__mobile-link" 
+                onClick={() => setMobileOpen(false)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <Home size={16} /> Home
+                </div>
+              </NavLink>
+              <NavLink 
+                to="/dashboard" 
+                className="landing-navbar__mobile-link" 
+                onClick={() => setMobileOpen(false)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <LayoutDashboard size={16} /> Dashboard
+                </div>
+              </NavLink>
+              <NavLink 
+                to="/create-avatar" 
+                className="landing-navbar__mobile-link" 
+                onClick={() => setMobileOpen(false)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <Sparkles size={16} /> Create Avatar
+                </div>
+              </NavLink>
+              <NavLink 
+                to="/profile" 
+                className="landing-navbar__mobile-link" 
+                onClick={() => setMobileOpen(false)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <User size={16} /> View Profile
+                </div>
+              </NavLink>
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  setShowLogoutConfirm(true);
+                }}
+                className="landing-navbar__mobile-link"
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#ef4444', 
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  width: '100%',
+                  padding: '0.75rem 1rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <LogOut size={16} /> Logout
+                </div>
+              </button>
+            </Motion.nav>
+          )}
+        </AnimatePresence>
       </Motion.header>
 
       {/* Page Content */}

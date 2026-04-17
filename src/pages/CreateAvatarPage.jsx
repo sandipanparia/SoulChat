@@ -66,7 +66,7 @@ export function CreateAvatarPage() {
   }
 
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
 
   const handleSave = async (e) => {
     e.preventDefault()

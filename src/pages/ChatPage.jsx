@@ -17,7 +17,7 @@ export function ChatPage() {
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
 
   useEffect(() => {
     const loadMessages = async () => {
