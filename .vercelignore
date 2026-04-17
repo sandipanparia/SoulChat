@@ -1,0 +1,6 @@
+# Don't upload local env to Vercel — it contains VITE_API_URL=localhost
+# which would get baked into the production build
+.env
+.env.local
+credentials.txt
+node_modules
