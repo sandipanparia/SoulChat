@@ -1,6 +1,8 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { connectDatabase } from './config/db.js'
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
@@ -8,6 +10,9 @@ import avatarRoutes from './routes/avatarRoutes.js'
 import chatRoutes from './routes/chatRoutes.js'
 
 dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -29,9 +34,20 @@ app.use('/api/user', userRoutes)
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/messages', chatRoutes)
 
+// --- Production SPA Fallback ---
+// Serve the built React app from the dist folder
+const distPath = path.join(__dirname, '..', 'dist')
+app.use(express.static(distPath))
+
+// For any route that is NOT an API route, serve index.html
+// This lets React Router handle client-side routing on page reload
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'))
+})
+
 connectDatabase()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`)
     })
   })
