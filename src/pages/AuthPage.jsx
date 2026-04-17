@@ -46,6 +46,10 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
             email: cred.id || '',
             password: cred.password || '',
           }))
+          // Automatically trigger login with the retrieved credentials
+          if (cred.id && cred.password) {
+             performAuth(cred.id, cred.password, true)
+          }
         }
       })
       .catch(() => {
@@ -79,34 +83,50 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  function handleModeSwitch(newMode) {
+    if (newMode === mode) return
+    setMode(newMode)
+    setFormData({
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    })
+    setStatus({ loading: false, error: '', success: '' })
+  }
+
   async function handleSubmit(event) {
-    event.preventDefault()
+    if (event) event.preventDefault()
+    await performAuth(formData.email, formData.password, isLogin, formData.fullName)
+  }
+
+  async function performAuth(email, password, isLoginMode, fullName = '') {
     setStatus({ loading: false, error: '', success: '' })
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
+    if (!isLoginMode && password !== formData.confirmPassword) {
       setStatus({ loading: false, error: 'Passwords do not match.', success: '' })
       return
     }
 
-    if (!formData.email || !formData.password) {
+    if (!email || !password) {
       setStatus({ loading: false, error: 'Please fill in all required fields.', success: '' })
       return
     }
 
-    if (!isLogin && !formData.fullName) {
+    if (!isLoginMode && !fullName) {
       setStatus({ loading: false, error: 'Please enter your full name.', success: '' })
       return
     }
 
     setStatus({ loading: true, error: '', success: '' })
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup'
-    const payload = isLogin
-      ? { email: formData.email, password: formData.password }
+    const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/signup'
+    const payload = isLoginMode
+      ? { email, password }
       : {
-          fullName: formData.fullName,
-          email: formData.email,
-          password: formData.password,
+          fullName,
+          email,
+          password,
         }
 
     try {
@@ -129,8 +149,8 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         )
       }
 
-      if (isLogin) {
-        await savePasswordToBrowser(formData.email, formData.password)
+      if (isLoginMode) {
+        await savePasswordToBrowser(email, password)
         localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email }))
         setStatus({
           loading: false,
@@ -141,7 +161,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         navigate(redirectTo, { replace: true })
       } else {
         // Save credentials to browser after successful signup
-        await savePasswordToBrowser(formData.email, formData.password)
+        await savePasswordToBrowser(email, password)
         setStatus({
           loading: false,
           error: '',
@@ -150,7 +170,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         setMode('login')
         setFormData({
           fullName: '',
-          email: formData.email,
+          email: email,
           password: '',
           confirmPassword: '',
         })
@@ -161,32 +181,32 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         error.name === 'TypeError' &&
         (error.message === 'Failed to fetch' || error.message.includes('NetworkError'))
       ) {
-        await handleLocalAuth()
+        await handleLocalAuth(email, password, isLoginMode, fullName)
       } else {
         setStatus({ loading: false, error: error.message, success: '' })
       }
     }
   }
 
-  async function handleLocalAuth() {
+  async function handleLocalAuth(email, password, isLoginMode, fullName) {
     const USERS_KEY = 'soulchat-users'
     const stored = JSON.parse(localStorage.getItem(USERS_KEY) || '[]')
-    const normalizedEmail = formData.email.toLowerCase().trim()
+    const normalizedEmail = email.toLowerCase().trim()
 
     await new Promise((r) => setTimeout(r, minProcessingDelayMs))
 
-    if (isLogin) {
+    if (isLoginMode) {
       const user = stored.find((u) => u.email === normalizedEmail)
       if (!user) {
         setStatus({ loading: false, error: 'No account found with this email. Please sign up first.', success: '' })
         return
       }
-      if (user.password !== formData.password) {
+      if (user.password !== password) {
         setStatus({ loading: false, error: 'Invalid email or password.', success: '' })
         return
       }
       localStorage.setItem('soulchat-user', JSON.stringify({ fullName: user.fullName, email: user.email }))
-      await savePasswordToBrowser(formData.email, formData.password)
+      await savePasswordToBrowser(email, password)
       setStatus({ loading: false, error: '', success: 'Login successful.' })
       onAuthSuccess()
       navigate(redirectTo, { replace: true })
@@ -197,13 +217,13 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         return
       }
       stored.push({
-        fullName: formData.fullName.trim(),
+        fullName: fullName.trim(),
         email: normalizedEmail,
-        password: formData.password,
+        password: password,
       })
       localStorage.setItem(USERS_KEY, JSON.stringify(stored))
       // Save credentials to browser after local signup
-      await savePasswordToBrowser(formData.email, formData.password)
+      await savePasswordToBrowser(email, password)
       setStatus({
         loading: false,
         error: '',
@@ -212,7 +232,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
       setMode('login')
       setFormData({
         fullName: '',
-        email: formData.email,
+        email: email,
         password: '',
         confirmPassword: '',
       })
@@ -316,7 +336,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
             <div className="auth-card__toggle">
               <button
                 type="button"
-                onClick={() => setMode('login')}
+                onClick={() => handleModeSwitch('login')}
                 className={`auth-card__toggle-btn ${isLogin ? 'auth-card__toggle-btn--active' : ''}`}
                 id="auth-toggle-login"
               >
@@ -324,7 +344,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('signup')}
+                onClick={() => handleModeSwitch('signup')}
                 className={`auth-card__toggle-btn ${!isLogin ? 'auth-card__toggle-btn--active' : ''}`}
                 id="auth-toggle-signup"
               >
@@ -386,7 +406,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
             </div>
 
             {/* Form */}
-            <form className="auth-card__form" onSubmit={handleSubmit} id="auth-form">
+            <div className="auth-card__form" id="auth-form" onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}>
               {!isLogin && (
                 <div className="auth-card__field">
                   <User size={16} className="auth-card__field-icon" />
@@ -417,16 +437,16 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
               </div>
               <div className="auth-card__field">
                 <Lock size={16} className="auth-card__field-icon" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  autoComplete={isLogin ? 'current-password' : 'new-password'}
-                  className="auth-card__input"
-                  id="auth-password"
-                />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
+                    className="auth-card__input"
+                    id="auth-password"
+                  />
                 <button
                   type="button"
                   className="auth-card__field-toggle"
@@ -480,7 +500,8 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
               )}
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 className="auth-card__submit"
                 disabled={status.loading}
                 id="auth-submit"
@@ -493,13 +514,13 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
                     ? 'Sign In'
                     : 'Create Account'}
               </button>
-            </form>
+            </div>
 
             <p className="auth-card__switch">
               {isLogin ? "New here? " : 'Already have an account? '}
               <button
                 type="button"
-                onClick={() => setMode(isLogin ? 'signup' : 'login')}
+                onClick={() => handleModeSwitch(isLogin ? 'signup' : 'login')}
                 className="auth-card__switch-link"
               >
                 {isLogin ? 'Create an account' : 'Login'}

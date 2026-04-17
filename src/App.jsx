@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { MainLayout } from './components/layout/MainLayout'
-import { AppShellLayout } from './components/layout/AppShellLayout'
+import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout'
 import { LandingHomePage } from './pages/LandingHomePage'
 import { HomePage } from './pages/HomePage'
 import { AuthPage } from './pages/AuthPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CreateAvatarPage } from './pages/CreateAvatarPage'
 import { ChatPage } from './pages/ChatPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 const AUTH_KEY = 'soulchat-auth'
 
@@ -41,18 +41,14 @@ function App() {
         element={<AuthPage onAuthSuccess={authActions.login} redirectTo="/home" />}
       />
 
-      {/* Authenticated routes with main layout */}
+      {/* Home — full-page layout matching landing theme */}
       <Route
-        element={<MainLayout isAuthenticated={isAuthenticated} onLogout={authActions.logout} />}
-      >
-        <Route
-          path="/home"
-          element={isAuthenticated ? <HomePage /> : <Navigate to="/auth" replace />}
-        />
-      </Route>
+        path="/home"
+        element={isAuthenticated ? <HomePage onLogout={authActions.logout} /> : <Navigate to="/auth" replace />}
+      />
 
-      {/* App shell routes */}
-      <Route element={<AppShellLayout onLogout={authActions.logout} />}>
+      {/* Authenticated routes — same theme as landing/home */}
+      <Route element={<AuthenticatedLayout onLogout={authActions.logout} />}>
         <Route
           path="/dashboard"
           element={isAuthenticated ? <DashboardPage /> : <Navigate to="/auth" replace />}
@@ -64,6 +60,10 @@ function App() {
         <Route
           path="/chat/:avatarId"
           element={isAuthenticated ? <ChatPage /> : <Navigate to="/auth" replace />}
+        />
+        <Route
+          path="/profile"
+          element={isAuthenticated ? <ProfilePage onLogout={authActions.logout} /> : <Navigate to="/auth" replace />}
         />
       </Route>
 

