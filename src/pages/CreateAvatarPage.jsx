@@ -26,6 +26,8 @@ export function CreateAvatarPage() {
 
   const [photos, setPhotos] = useState([])
   const [voiceNotes, setVoiceNotes] = useState([])
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState(null)
 
   const photoInputRef = useRef(null)
   const voiceInputRef = useRef(null)
@@ -76,6 +78,9 @@ export function CreateAvatarPage() {
       return
     }
 
+    setIsSaving(true)
+    setError(null)
+    
     const newAvatar = {
       id: Date.now().toString(),
       name: formData.name,
@@ -93,23 +98,39 @@ export function CreateAvatarPage() {
     try {
       const storedUser = JSON.parse(localStorage.getItem('soulchat-user') || '{}')
       if (storedUser.email) {
+        // Create a clean payload for the backend (let it generate the ID)
+        const { id, ...cleanAvatarData } = newAvatar
+        
         const response = await fetch(`${apiBaseUrl}/api/avatars`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: storedUser.email, ...newAvatar })
+          body: JSON.stringify({ email: storedUser.email, ...cleanAvatarData })
         })
+        
         if (response.ok) {
           const dbAvatar = await response.json()
-          newAvatar.id = dbAvatar.id // use mongo generated id
+          newAvatar.id = dbAvatar.id || dbAvatar._id // use backend ID
+        } else {
+          const errData = await response.json().catch(() => ({}))
+          console.error('Backend save failed:', errData.message)
+          // Don't block navigation, but log it
         }
       }
     } catch (err) {
-      console.log('Backend unreachable, saving avatar locally only.')
+      console.error('Network or backend error during creation:', err)
+      // Fallback to local is fine
     }
 
-    const existing = JSON.parse(localStorage.getItem('soulchat-avatars') || '[]')
-    localStorage.setItem('soulchat-avatars', JSON.stringify([...existing, newAvatar]))
+    // Always try to save locally as a backup, but catch QuotaExceededError
+    try {
+      const existing = JSON.parse(localStorage.getItem('soulchat-avatars') || '[]')
+      localStorage.setItem('soulchat-avatars', JSON.stringify([...existing, newAvatar]))
+    } catch (storageErr) {
+      console.warn('Local storage quota exceeded. Avatar may not be available offline.', storageErr)
+      // If we couldn't even save locally AND the backend failed, we should probably warn the user
+    }
     
+    setIsSaving(false)
     navigate('/dashboard')
   }
 
@@ -272,13 +293,28 @@ export function CreateAvatarPage() {
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem' }}>
-            <button onClick={handleSave} className="landing-btn landing-btn--ghost" id="create-save-draft">
-              Save Draft
-            </button>
-            <button onClick={handleSave} className="landing-btn landing-btn--primary" id="create-continue">
-              Continue to Next Step
-            </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem', flexDirection: 'column' }}>
+            {error && (
+              <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{error}</p>
+            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <button 
+                onClick={handleSave} 
+                className="landing-btn landing-btn--ghost" 
+                id="create-save-draft"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Processing...' : 'Save Draft'}
+              </button>
+              <button 
+                onClick={handleSave} 
+                className="landing-btn landing-btn--primary" 
+                id="create-continue"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Creating Avatar...' : 'Continue to Next Step'}
+              </button>
+            </div>
           </div>
         </Motion.section>
       </div>
