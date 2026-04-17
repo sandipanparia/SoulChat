@@ -151,6 +151,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
       if (isLoginMode) {
         await savePasswordToBrowser(email, password)
+        localStorage.removeItem('soulchat-avatars') // Fresh start for new session
         localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
         setStatus({
           loading: false,
@@ -219,6 +220,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         return
       }
       const { password: userPass, ...safeUser } = user
+      localStorage.removeItem('soulchat-avatars') // Fresh start for new session
       localStorage.setItem('soulchat-user', JSON.stringify(safeUser))
       await savePasswordToBrowser(email, password)
       setStatus({ loading: false, error: '', success: 'Login successful.' })
@@ -273,6 +275,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         throw new Error(data.message || 'Google sign-up failed.')
       }
 
+      localStorage.removeItem('soulchat-avatars') // Fresh start for new session
       localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
       setStatus({ loading: false, error: '', success: 'Google sign-up successful.' })
       onAuthSuccess()

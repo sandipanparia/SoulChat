@@ -74,7 +74,7 @@ export function ProfilePage({ onLogout }) {
     setIsEditing(false)
     setShowSaved(true)
     setTimeout(() => setShowSaved(false), 3000)
-    window.dispatchEvent(new Event('storage')) // notify AuthenticatedLayout
+    window.dispatchEvent(new CustomEvent('soulchat-user-updated'))
     
     trySaveProfileToDB(updatedUser)
   }

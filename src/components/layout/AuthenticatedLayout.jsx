@@ -28,8 +28,16 @@ export function AuthenticatedLayout({ onLogout }) {
         // ignore
       }
     }
+    
+    // storage event only fires for other tabs
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+    // custom event for same-tab updates
+    window.addEventListener('soulchat-user-updated', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('soulchat-user-updated', handleStorageChange)
+    }
   }, [])
 
   const initials = useMemo(() => {

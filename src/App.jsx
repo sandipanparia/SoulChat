@@ -25,6 +25,7 @@ function App() {
       logout: () => {
         localStorage.removeItem(AUTH_KEY)
         localStorage.removeItem('soulchat-user')
+        localStorage.removeItem('soulchat-avatars')
         setIsAuthenticated(false)
         if (typeof navigator !== 'undefined' && navigator.credentials && navigator.credentials.preventSilentAccess) {
           navigator.credentials.preventSilentAccess()
