@@ -2,6 +2,7 @@ import '../landing.css'
 import { useState, useMemo, useRef } from 'react'
 import { motion as Motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Camera, LogOut, CheckCircle2 } from 'lucide-react'
+import { getApiBaseUrl } from '../utils/api'
 
 export function ProfilePage({ onLogout }) {
   const fileInputRef = useRef(null)
@@ -24,7 +25,7 @@ export function ProfilePage({ onLogout }) {
   const [showSaved, setShowSaved] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
+  const apiBaseUrl = getApiBaseUrl()
 
   const trySaveProfileToDB = async (updatedUser) => {
     try {

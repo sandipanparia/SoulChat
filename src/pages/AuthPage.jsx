@@ -7,6 +7,7 @@ import {
   HeartHandshake, Mail, Lock, User, Eye, EyeOff,
   Heart, Sparkles, Shield, ArrowLeft
 } from 'lucide-react'
+import { getApiBaseUrl } from '../utils/api'
 
 export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
   const [mode, setMode] = useState('login')
@@ -22,7 +23,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
   const isLogin = mode === 'login'
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
+  const apiBaseUrl = getApiBaseUrl()
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   const minProcessingDelayMs = 1200
 

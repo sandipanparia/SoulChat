@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
 import { Mic, SendHorizonal, HeartHandshake } from 'lucide-react'
 import { chatPrompts, memoryProfiles } from '../data/soulData'
+import { getApiBaseUrl } from '../utils/api'
 
 export function ChatPage() {
   const { avatarId } = useParams()
@@ -17,7 +18,7 @@ export function ChatPage() {
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
+  const apiBaseUrl = getApiBaseUrl()
 
   useEffect(() => {
     const loadMessages = async () => {

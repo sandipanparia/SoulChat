@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { motion as Motion, AnimatePresence } from 'framer-motion'
 import { PlusCircle, HeartHandshake, ArrowRight, MessageCircle, Trash2, Edit2, Camera, X } from 'lucide-react'
 import { useRef } from 'react'
+import { getApiBaseUrl } from '../utils/api'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -19,7 +20,7 @@ export function DashboardPage() {
   const [avatarToEdit, setAvatarToEdit] = useState(null)
   const fileInputRef = useRef(null)
   
-  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
+  const apiBaseUrl = getApiBaseUrl()
   const user = JSON.parse(localStorage.getItem('soulchat-user') || '{}')
 
   const loadAvatars = async () => {

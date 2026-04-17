@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createSteps } from '../data/soulData'
 import { Image, Mic, X } from 'lucide-react'
+import { getApiBaseUrl } from '../utils/api'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -68,7 +69,7 @@ export function CreateAvatarPage() {
   }
 
   const navigate = useNavigate()
-  const apiBaseUrl = import.meta.env.VITE_API_URL || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? `http://${window.location.hostname}:5000` : 'http://localhost:5000')
+  const apiBaseUrl = getApiBaseUrl()
 
   const handleSave = async (e) => {
     e.preventDefault()
