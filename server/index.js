@@ -41,7 +41,8 @@ app.use(express.static(distPath))
 
 // For any route that is NOT an API route, serve index.html
 // This lets React Router handle client-side routing on page reload
-app.get('*', (_req, res) => {
+// Express 5 requires named wildcard params instead of bare '*'
+app.get('/{*splat}', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'))
 })
 
