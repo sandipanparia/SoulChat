@@ -7,6 +7,7 @@ import authRoutes from '../server/routes/authRoutes.js'
 import userRoutes from '../server/routes/userRoutes.js'
 import avatarRoutes from '../server/routes/avatarRoutes.js'
 import chatRoutes from '../server/routes/chatRoutes.js'
+import aiChatRoutes from '../server/routes/aiChatRoutes.js'
 
 dotenv.config()
 
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/messages', chatRoutes)
+app.use('/api/ai', aiChatRoutes)
 
 // Export the Express app as a Vercel serverless function
 export default app
