@@ -8,6 +8,7 @@ import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import avatarRoutes from './routes/avatarRoutes.js'
 import chatRoutes from './routes/chatRoutes.js'
+import aiChatRoutes from './routes/aiChatRoutes.js'
 
 dotenv.config()
 
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/avatars', avatarRoutes)
 app.use('/api/messages', chatRoutes)
+app.use('/api/ai', aiChatRoutes)
 
 // --- Production SPA Fallback ---
 // Serve the built React app from the dist folder

@@ -2,7 +2,7 @@ import '../landing.css'
 import { useMemo, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
-import { Mic, SendHorizonal, HeartHandshake } from 'lucide-react'
+import { Mic, SendHorizonal, HeartHandshake, Trash2, X } from 'lucide-react'
 import { chatPrompts, memoryProfiles } from '../data/soulData'
 import { getApiBaseUrl } from '../utils/api'
 
@@ -19,6 +19,21 @@ export function ChatPage() {
   const [isTyping, setIsTyping] = useState(false)
   
   const apiBaseUrl = getApiBaseUrl()
+
+  const clearChat = async () => {
+    if (!confirm('Delete all messages? This cannot be undone.')) return
+    
+    // Clear from localStorage
+    localStorage.removeItem(`soulchat-msgs-${avatarId}`)
+    setMessages([])
+    
+    // Clear from MongoDB
+    try {
+      await fetch(`${apiBaseUrl}/api/messages/${avatarId}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('Failed to delete messages from server:', err)
+    }
+  }
 
   useEffect(() => {
     const loadMessages = async () => {
@@ -72,20 +87,66 @@ export function ChatPage() {
     } catch (err) {}
   }
 
-  const handleSend = () => {
+  const deleteMessage = async (msgId) => {
+    // Remove from state & localStorage
+    setMessages(prev => {
+      const updated = prev.filter(m => (m.id || m._id) !== msgId)
+      localStorage.setItem(`soulchat-msgs-${avatarId}`, JSON.stringify(updated))
+      return updated
+    })
+
+    // Remove from MongoDB
+    try {
+      await fetch(`${apiBaseUrl}/api/messages/single/${msgId}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('Failed to delete message:', err)
+    }
+  }
+
+  const handleSend = async () => {
     if (!inputText.trim()) return
     
     const userMsg = { text: inputText, sender: 'user', id: Date.now() }
     saveMessage(userMsg)
+    const currentInput = inputText
     setInputText('')
     setIsTyping(true)
     
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = { text: `It's so good to hear from you. I love you ${profile.relation.includes('Mom') ? 'sweetheart' : 'always'}.`, sender: 'ai', id: Date.now() + 1 }
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatarId,
+          userMessage: currentInput,
+          // Send avatar profile data as fallback for local-only avatars
+          avatarName: profile.name,
+          avatarRelation: profile.relation,
+          avatarTone: profile.tone,
+          avatarTraits: profile.traits,
+          avatarPhrases: profile.phrases,
+          avatarMemories: profile.memories,
+          avatarBirthYear: profile.birthYear,
+          avatarSpecialDates: profile.specialDates,
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const aiResponse = { text: data.reply, sender: 'ai', id: Date.now() + 1 }
+        saveMessage(aiResponse)
+      } else {
+        const errData = await response.json().catch(() => ({}))
+        const aiResponse = { text: errData.message || `I'm having trouble connecting right now. Please try again in a moment.`, sender: 'ai', id: Date.now() + 1 }
+        saveMessage(aiResponse)
+      }
+    } catch (err) {
+      console.error('AI chat error:', err)
+      const aiResponse = { text: `I'm here with you, but my connection seems to be off. Give me a moment and try again.`, sender: 'ai', id: Date.now() + 1 }
       saveMessage(aiResponse)
+    } finally {
       setIsTyping(false)
-    }, 1500)
+    }
   }
 
   return (
@@ -137,6 +198,40 @@ export function ChatPage() {
           className="landing-mockup chat-area"
           style={{ padding: '1.5rem' }}
         >
+          {/* Chat Header with Clear button */}
+          {messages.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+              <button
+                onClick={clearChat}
+                id="chat-clear"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.45rem 0.9rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--landing-font-body)',
+                  color: '#d35d6e',
+                  background: 'rgba(211,93,110,0.08)',
+                  border: '1px solid rgba(211,93,110,0.2)',
+                  borderRadius: 'var(--landing-radius-full)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(211,93,110,0.15)'
+                  e.currentTarget.style.borderColor = 'rgba(211,93,110,0.35)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(211,93,110,0.08)'
+                  e.currentTarget.style.borderColor = 'rgba(211,93,110,0.2)'
+                }}
+              >
+                <Trash2 size={13} /> Clear Chat
+              </button>
+            </div>
+          )}
           {messages.length === 0 ? (
             /* Empty state */
             <div className="chat-area__empty">
@@ -156,23 +251,64 @@ export function ChatPage() {
             /* Messages List */
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem' }}>
               {messages.map((msg) => (
-                <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div
+                  key={msg.id || msg._id}
+                  className="chat-msg-row"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  {/* Delete button — left side for user messages */}
+                  {msg.sender === 'user' && (
+                    <button
+                      onClick={() => deleteMessage(msg.id || msg._id)}
+                      className="chat-msg-delete"
+                      aria-label="Delete message"
+                      title="Delete message"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                   <div style={{
                     maxWidth: '75%',
                     padding: '0.875rem 1rem',
                     borderRadius: '12px',
-                    backgroundColor: msg.sender === 'user' ? 'var(--landing-accent)' : 'rgba(255,255,255,0.05)',
+                    background: msg.sender === 'user'
+                      ? 'linear-gradient(135deg, var(--landing-violet) 0%, #a67bd4 100%)'
+                      : 'rgba(255,255,255,0.65)',
                     color: msg.sender === 'user' ? '#fff' : 'var(--landing-text)',
-                    border: msg.sender === 'user' ? 'none' : '1px solid rgba(255,255,255,0.1)'
+                    border: msg.sender === 'user' ? 'none' : '1px solid rgba(200,184,232,0.3)',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: msg.sender === 'user'
+                      ? '0 4px 14px rgba(139,108,199,0.3)'
+                      : '0 2px 8px rgba(45,36,56,0.06)',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.6',
                   }}>
                     {msg.text}
                   </div>
+                  {/* Delete button — right side for AI messages */}
+                  {msg.sender === 'ai' && (
+                    <button
+                      onClick={() => deleteMessage(msg.id || msg._id)}
+                      className="chat-msg-delete"
+                      aria-label="Delete message"
+                      title="Delete message"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                 </div>
               ))}
               {isTyping && (
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <div style={{ padding: '0.875rem 1rem', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--landing-text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                    {profile.name} is typing...
+                  <div className="typing-indicator">
+                    <span className="typing-dot" style={{ animationDelay: '0s' }}></span>
+                    <span className="typing-dot" style={{ animationDelay: '0.15s' }}></span>
+                    <span className="typing-dot" style={{ animationDelay: '0.3s' }}></span>
                   </div>
                 </div>
               )}

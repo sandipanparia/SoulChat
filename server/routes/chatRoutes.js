@@ -48,4 +48,34 @@ router.post('/:avatarId', async (req, res) => {
   }
 })
 
+// Delete a single message by ID
+router.delete('/single/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params
+    
+    // Only try MongoDB delete if it looks like a valid ObjectId (24 hex chars)
+    if (/^[0-9a-fA-F]{24}$/.test(messageId)) {
+      await Message.findByIdAndDelete(messageId)
+    }
+    // Local-only messages (timestamp IDs) are handled client-side
+    
+    res.status(200).json({ message: 'Message deleted' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error deleting message' })
+  }
+})
+
+// Delete all messages for a specific avatar
+router.delete('/:avatarId', async (req, res) => {
+  try {
+    const { avatarId } = req.params
+    await Message.deleteMany({ avatarId })
+    res.status(200).json({ message: 'All messages deleted' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error deleting messages' })
+  }
+})
+
 export default router

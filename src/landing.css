@@ -2036,6 +2036,64 @@
   }
 }
 
+/* Per-message delete button */
+.chat-msg-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(211, 93, 110, 0.08);
+  color: #d35d6e;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chat-msg-row:hover .chat-msg-delete {
+  opacity: 1;
+}
+
+.chat-msg-delete:hover {
+  background: rgba(211, 93, 110, 0.2);
+  transform: scale(1.15);
+}
+
+/* Typing indicator — bouncing dots */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.875rem 1.25rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(200, 184, 232, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.typing-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--landing-violet-soft, #a67bd4);
+  animation: typingBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
 /* ═══════════════════════════════════════
    SMOOTH SCROLL BEHAVIOR
    ═══════════════════════════════════════ */
