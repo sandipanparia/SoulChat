@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { createSteps } from '../data/soulData'
 import { Image, Mic, X } from 'lucide-react'
 import { getApiBaseUrl } from '../utils/api'
+import { compressImage } from '../utils/image'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -33,20 +34,21 @@ export function CreateAvatarPage() {
   const photoInputRef = useRef(null)
   const voiceInputRef = useRef(null)
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     if (e.target.files) {
       const files = Array.from(e.target.files)
       
-      files.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
+      for (const file of files) {
+        try {
+          const compressed = await compressImage(file)
           setPhotos(prev => [...prev, {
             file,
-            preview: reader.result
+            preview: compressed
           }])
+        } catch (err) {
+          console.error('Failed to compress image:', err)
         }
-        reader.readAsDataURL(file)
-      })
+      }
     }
   }
 

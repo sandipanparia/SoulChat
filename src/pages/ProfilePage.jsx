@@ -3,6 +3,7 @@ import { useState, useMemo, useRef } from 'react'
 import { motion as Motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Camera, LogOut, CheckCircle2 } from 'lucide-react'
 import { getApiBaseUrl } from '../utils/api'
+import { compressImage } from '../utils/image'
 
 export function ProfilePage({ onLogout }) {
   const fileInputRef = useRef(null)
@@ -43,15 +44,16 @@ export function ProfilePage({ onLogout }) {
     }
   }
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setTempProfilePic(reader.result)
+      try {
+        const compressed = await compressImage(file)
+        setTempProfilePic(compressed)
         setIsEditing(true) // Open save/cancel preview options natively
+      } catch (err) {
+        console.error('Failed to compress image:', err)
       }
-      reader.readAsDataURL(file)
     }
     // Clear the input value so selecting the same file again triggers onChange
     e.target.value = ''

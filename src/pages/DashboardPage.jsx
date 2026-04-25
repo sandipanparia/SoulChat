@@ -5,6 +5,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion'
 import { PlusCircle, HeartHandshake, ArrowRight, MessageCircle, Trash2, Edit2, Camera, X } from 'lucide-react'
 import { useRef } from 'react'
 import { getApiBaseUrl } from '../utils/api'
+import { compressImage } from '../utils/image'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -95,14 +96,15 @@ export function DashboardPage() {
     setAvatarToEdit(null)
   }
 
-  const handleEditPhoto = (e) => {
+  const handleEditPhoto = async (e) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setAvatarToEdit(prev => ({ ...prev, image: reader.result }))
+      try {
+        const compressed = await compressImage(file)
+        setAvatarToEdit(prev => ({ ...prev, image: compressed }))
+      } catch (err) {
+        console.error('Compression failed', err)
       }
-      reader.readAsDataURL(file)
     }
   }
 
