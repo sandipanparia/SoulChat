@@ -1,5 +1,5 @@
 import '../landing.css'
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
 import { Mic, SendHorizonal, HeartHandshake, Trash2, X } from 'lucide-react'
@@ -17,6 +17,14 @@ export function ChatPage() {
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const messagesContainerRef = useRef(null)
+
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
+  }, [messages, isTyping])
   
   const apiBaseUrl = getApiBaseUrl()
 
@@ -150,7 +158,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="auth-layout__page">
+    <div className="auth-layout__page auth-layout__page--chat">
       <div className="chat-grid">
         {/* Left — Profile Card */}
         <Motion.aside
@@ -249,7 +257,7 @@ export function ChatPage() {
             </div>
           ) : (
             /* Messages List */
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem' }}>
+            <div ref={messagesContainerRef} className="chat-messages-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem', minHeight: 0 }}>
               {messages.map((msg) => (
                 <div
                   key={msg.id || msg._id}
