@@ -7,6 +7,7 @@ import {
   Camera, Mic, MessageSquare, Clock, BookHeart, Shield,
   ChevronRight, Menu, X, ArrowRight, Quote, Star
 } from 'lucide-react'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
 
 /* ──────────────────────────── DATA ──────────────────────────── */
 
@@ -130,15 +131,18 @@ function Navbar() {
           </Link>
         </nav>
 
-        {/* Mobile toggle */}
-        <button
-          className="landing-navbar__mobile-toggle"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-          id="mobile-menu-toggle"
-        >
-          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <ThemeToggle />
+          {/* Mobile toggle */}
+          <button
+            className="landing-navbar__mobile-toggle"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+            id="mobile-menu-toggle"
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}

@@ -2314,3 +2314,382 @@
     animation: none !important;
   }
 }
+
+/* ═══════════════════════════════════════
+   THEME TOGGLE BUTTON
+   ═══════════════════════════════════════ */
+
+.theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(200, 184, 232, 0.35);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  color: var(--landing-violet);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(139, 108, 199, 0.2);
+}
+
+.theme-toggle__icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: rotate(0deg) scale(1);
+  opacity: 1;
+}
+.theme-toggle__icon--hidden {
+  transform: rotate(90deg) scale(0);
+  opacity: 0;
+}
+
+/* ═══════════════════════════════════════
+   DARK THEME — Design Tokens
+   ═══════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --landing-cream: #0f0d14;
+  --landing-warm-white: #141219;
+  --landing-beige: #1e1a27;
+  --landing-lavender: #2a2440;
+  --landing-lavender-deep: #4a3d6e;
+  --landing-pink: #2d1f28;
+  --landing-pink-deep: #a06878;
+  --landing-blue: #1a2030;
+  --landing-blue-deep: #3a5070;
+  --landing-gold: #2a2418;
+  --landing-gold-deep: #8a7a50;
+  --landing-text: #e8e4f0;
+  --landing-text-soft: #b8b0ca;
+  --landing-text-muted: #7a7290;
+  --landing-violet: #a78bda;
+  --landing-violet-soft: #c4a8f0;
+  --landing-glass-bg: rgba(20, 18, 28, 0.65);
+  --landing-glass-border: rgba(255, 255, 255, 0.08);
+  --landing-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Dark: Body / Page ── */
+[data-theme="dark"] body {
+  background: radial-gradient(circle at top right, #1a1525 0%, #0f0d14 40%, #12101a 100%);
+  color: #e8e4f0;
+}
+
+[data-theme="dark"] .landing-page {
+  color: #e8e4f0;
+  background: #0f0d14;
+}
+
+/* ── Dark: Theme Toggle ── */
+[data-theme="dark"] .theme-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f0c040;
+}
+[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(240, 192, 64, 0.2);
+}
+
+/* ── Dark: Navbar ── */
+[data-theme="dark"] .landing-navbar__inner {
+  background: rgba(15, 13, 20, 0.65);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .landing-navbar--scrolled .landing-navbar__inner {
+  background: rgba(15, 13, 20, 0.85);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .landing-navbar__link:hover {
+  color: #e8e4f0;
+  background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .landing-navbar__link--active {
+  color: var(--landing-violet) !important;
+  background: rgba(167, 139, 218, 0.12);
+}
+[data-theme="dark"] .landing-navbar__mobile-menu {
+  background: rgba(15, 13, 20, 0.92);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .landing-navbar__mobile-link:hover {
+  background: rgba(167, 139, 218, 0.12);
+}
+
+/* ── Dark: Hero ── */
+[data-theme="dark"] .landing-hero__bg {
+  background: linear-gradient(170deg, #12101a 0%, #1a1228 15%, #18142a 30%, #141828 50%, #161a24 65%, #1a1618 80%, #141210 100%);
+}
+[data-theme="dark"] .landing-hero__stars {
+  opacity: 0.6;
+}
+[data-theme="dark"] .landing-hero__orb--1 {
+  background: radial-gradient(circle, rgba(100, 70, 150, 0.25) 0%, transparent 70%);
+}
+[data-theme="dark"] .landing-hero__orb--2 {
+  background: radial-gradient(circle, rgba(150, 80, 80, 0.2) 0%, transparent 70%);
+}
+[data-theme="dark"] .landing-hero__orb--3 {
+  background: radial-gradient(circle, rgba(70, 90, 140, 0.2) 0%, transparent 70%);
+}
+[data-theme="dark"] .landing-hero__orb--4 {
+  background: radial-gradient(circle, rgba(140, 120, 80, 0.15) 0%, transparent 70%);
+}
+[data-theme="dark"] .landing-hero__overlay {
+  background: radial-gradient(ellipse at 40% 50%, rgba(15, 13, 20, 0.3) 0%, transparent 60%);
+}
+[data-theme="dark"] .landing-hero__badge {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(167, 139, 218, 0.2);
+}
+
+/* ── Dark: Mockup ── */
+[data-theme="dark"] .landing-mockup {
+  background: rgba(20, 18, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .landing-mockup__avatar-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .landing-mockup__msg--received {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .landing-mockup__msg--sent {
+  background: linear-gradient(135deg, rgba(139, 108, 199, 0.15) 0%, rgba(160, 104, 120, 0.12) 100%);
+  border-color: rgba(139, 108, 199, 0.12);
+}
+[data-theme="dark"] .landing-mockup__input-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Dark: Cards (steps, features, testimonials) ── */
+[data-theme="dark"] .landing-step-card,
+[data-theme="dark"] .landing-feature-card,
+[data-theme="dark"] .landing-testimonial-card {
+  background: rgba(20, 18, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+[data-theme="dark"] .landing-step-card:hover,
+[data-theme="dark"] .landing-feature-card:hover,
+[data-theme="dark"] .landing-testimonial-card:hover {
+  background: rgba(25, 22, 35, 0.8);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .landing-step-card__step-num {
+  background: rgba(167, 139, 218, 0.15);
+}
+[data-theme="dark"] .landing-step-card__icon-wrap {
+  background: linear-gradient(135deg, rgba(42, 36, 64, 0.8) 0%, rgba(45, 31, 40, 0.6) 100%);
+}
+[data-theme="dark"] .landing-feature-card__icon {
+  background: linear-gradient(135deg, rgba(42, 36, 64, 0.8) 0%, rgba(26, 32, 48, 0.6) 100%);
+}
+
+/* ── Dark: Section Alt Background ── */
+[data-theme="dark"] .landing-section--alt::before {
+  background: linear-gradient(180deg, rgba(42, 36, 64, 0.08) 0%, rgba(26, 32, 48, 0.05) 100%);
+}
+
+/* ── Dark: CTA ── */
+[data-theme="dark"] .landing-cta {
+  background: linear-gradient(135deg, rgba(42, 36, 64, 0.35) 0%, rgba(45, 31, 40, 0.25) 40%, rgba(26, 32, 48, 0.25) 70%, rgba(42, 36, 24, 0.2) 100%);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .landing-cta__orb--1 {
+  background: rgba(100, 70, 150, 0.15);
+}
+[data-theme="dark"] .landing-cta__orb--2 {
+  background: rgba(150, 80, 80, 0.1);
+}
+
+/* ── Dark: Footer ── */
+[data-theme="dark"] .landing-footer {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Dark: Buttons ── */
+[data-theme="dark"] .landing-btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .landing-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Dark: Auth Page ── */
+[data-theme="dark"] .auth-page__bg {
+  background: linear-gradient(170deg, #12101a 0%, #1a1228 15%, #18142a 30%, #141828 50%, #161a24 65%, #1a1618 80%, #141210 100%);
+}
+[data-theme="dark"] .auth-page__orb--1 {
+  background: radial-gradient(circle, rgba(100, 70, 150, 0.25) 0%, transparent 70%);
+}
+[data-theme="dark"] .auth-page__orb--2 {
+  background: radial-gradient(circle, rgba(150, 80, 80, 0.2) 0%, transparent 70%);
+}
+[data-theme="dark"] .auth-page__orb--3 {
+  background: radial-gradient(circle, rgba(70, 90, 140, 0.2) 0%, transparent 70%);
+}
+[data-theme="dark"] .auth-page__back-link {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .auth-page__back-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .auth-card {
+  background: rgba(20, 18, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .auth-card__toggle {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .auth-card__toggle-btn--active {
+  background: rgba(167, 139, 218, 0.15);
+  color: var(--landing-violet);
+}
+[data-theme="dark"] .auth-card__input {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e8e4f0;
+}
+[data-theme="dark"] .auth-card__input:focus {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--landing-violet-soft);
+  box-shadow: 0 0 0 3px rgba(167, 139, 218, 0.1);
+}
+[data-theme="dark"] .auth-card__google-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e8e4f0;
+}
+[data-theme="dark"] .auth-card__google-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .auth-card__divider::before,
+[data-theme="dark"] .auth-card__divider::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+[data-theme="dark"] .auth-info__feature {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .auth-info__feature:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .auth-info__badge {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Dark: Auth Layout ── */
+[data-theme="dark"] .auth-layout__bg {
+  background: linear-gradient(170deg, #12101a 0%, #1a1228 15%, #18142a 30%, #141828 50%, #161a24 65%, #1a1618 80%, #141210 100%);
+}
+
+/* ── Dark: Home Page ── */
+[data-theme="dark"] .home-navbar__avatar {
+  background: linear-gradient(135deg, rgba(42, 36, 64, 0.8) 0%, rgba(45, 31, 40, 0.6) 100%);
+}
+[data-theme="dark"] .home-card__arrow {
+  background: linear-gradient(135deg, rgba(42, 36, 64, 0.8) 0%, rgba(26, 32, 48, 0.6) 100%);
+}
+
+/* ── Dark: Create Avatar ── */
+[data-theme="dark"] .create-step {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .create-step--active {
+  background: linear-gradient(135deg, rgba(167, 139, 218, 0.12) 0%, rgba(160, 104, 120, 0.08) 100%);
+  border-color: rgba(167, 139, 218, 0.2);
+}
+[data-theme="dark"] .create-upload-area {
+  border-color: rgba(167, 139, 218, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+}
+[data-theme="dark"] .create-upload-area:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .create-preview {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Dark: Chat Page ── */
+[data-theme="dark"] .chat-area__empty-card {
+  background: rgba(20, 18, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .chat-area__prompt-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .chat-area__prompt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .chat-area__input-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .chat-area__input-bar:focus-within {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--landing-violet-soft);
+}
+[data-theme="dark"] .chat-area__input {
+  color: #e8e4f0;
+}
+[data-theme="dark"] .chat-area__mic-btn {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .chat-area__mic-btn:hover {
+  background: rgba(167, 139, 218, 0.12);
+}
+[data-theme="dark"] .chat-messages-scroll::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 218, 0.2);
+}
+[data-theme="dark"] .chat-mobile-header {
+  background: rgba(20, 18, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .typing-indicator {
+  background: rgba(20, 18, 28, 0.65);
+  border-color: rgba(167, 139, 218, 0.15);
+}
+[data-theme="dark"] .chat-msg-delete {
+  background: rgba(211, 93, 110, 0.12);
+}
+
+/* ── Dark: Profile Actions ── */
+[data-theme="dark"] .profile-actions {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Dark: Tailwind glass-card override ── */
+[data-theme="dark"] .glass-card {
+  background: rgba(20, 18, 28, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}

@@ -7,6 +7,7 @@ import {
   LayoutDashboard, PlusCircle, LogOut, User, ArrowRight, ChevronRight,
   Shield, BookHeart, Clock, Home, X, Menu
 } from 'lucide-react'
+import { ThemeToggle } from '../components/ui/ThemeToggle'
 
 /* ──────────────────────────── DATA ──────────────────────────── */
 
@@ -175,6 +176,7 @@ function HomeNavbar({ onLogout }) {
 
         {/* Navbar Actions (Profile + Mobile Toggle) */}
         <div className="landing-navbar__actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <ThemeToggle />
           {user && (
             <div 
               style={{ position: 'relative' }}

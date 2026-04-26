@@ -6,6 +6,7 @@ import {
   HeartHandshake, LayoutDashboard, Sparkles, MessageCircleHeart,
   Home, LogOut, User, Menu, X
 } from 'lucide-react'
+import { ThemeToggle } from '../ui/ThemeToggle'
 
 export function AuthenticatedLayout({ onLogout }) {
   const [scrolled, setScrolled] = useState(false)
@@ -99,6 +100,7 @@ export function AuthenticatedLayout({ onLogout }) {
 
           {/* Navbar Actions (Profile + Mobile Toggle) */}
           <div className="landing-navbar__actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <ThemeToggle />
             {user && (
               <div 
                 style={{ position: 'relative' }}
