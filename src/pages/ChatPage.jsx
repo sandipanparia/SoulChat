@@ -206,6 +206,18 @@ export function ChatPage() {
           className="landing-mockup chat-area"
           style={{ padding: '1.5rem' }}
         >
+          {/* Mobile-only compact profile header */}
+          <div className="chat-mobile-header">
+            <img
+              src={profile.image}
+              alt={profile.name}
+              className="chat-mobile-header__avatar"
+            />
+            <div className="chat-mobile-header__info">
+              <p className="chat-mobile-header__name">{profile.name}</p>
+              <p className="chat-mobile-header__relation">{profile.relation}</p>
+            </div>
+          </div>
           {/* Chat Header with Clear button */}
           {messages.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
