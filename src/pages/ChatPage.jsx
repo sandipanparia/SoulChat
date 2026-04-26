@@ -2,7 +2,7 @@ import '../landing.css'
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
-import { Mic, SendHorizonal, HeartHandshake, Trash2, X, MessageSquarePlus, Clock, Menu, MoreVertical } from 'lucide-react'
+import { Mic, SendHorizonal, HeartHandshake, Trash2, X, MessageSquarePlus, Clock, Menu, MoreVertical, Edit2 } from 'lucide-react'
 import { chatPrompts, memoryProfiles } from '../data/soulData'
 import { getApiBaseUrl } from '../utils/api'
 
@@ -19,6 +19,10 @@ export function ChatPage() {
   const [emptySessions, setEmptySessions] = useState([])
   const [showMobileSidebar, setShowMobileSidebar] = useState(false)
   const [activeDropdownId, setActiveDropdownId] = useState(null)
+  const [sessionTitles, setSessionTitles] = useState(() => JSON.parse(localStorage.getItem('soulchat-titles') || '{}'))
+  const [deleteModalSessionId, setDeleteModalSessionId] = useState(null)
+  const [renameModalSessionId, setRenameModalSessionId] = useState(null)
+  const [renameInput, setRenameInput] = useState('')
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesContainerRef = useRef(null)
@@ -83,18 +87,9 @@ export function ChatPage() {
   
   const apiBaseUrl = getApiBaseUrl()
 
-  const clearChat = async () => {
-    // We can remove the old "Delete Chat" button from the main header since we have three-dot menus now, 
-    // or keep it. If we keep it, it uses the same logic.
-    deleteSession(null, currentSessionId)
-  }
-
-  const deleteSession = async (e, sessionId) => {
-    if (e) e.stopPropagation()
-    if (!confirm('Delete this chat session? This cannot be undone.')) {
-      setActiveDropdownId(null)
-      return
-    }
+  const confirmDeleteSession = async () => {
+    if (!deleteModalSessionId) return
+    const sessionId = deleteModalSessionId
     
     // Clear from localStorage for target session
     const local = JSON.parse(localStorage.getItem(`soulchat-msgs-${avatarId}`) || '[]')
@@ -114,9 +109,28 @@ export function ChatPage() {
     
     // If we just deleted the active session, switch to a new one
     if (currentSessionId === sessionId) {
-      setCurrentSessionId(Date.now().toString())
+      const newSessionId = Date.now().toString()
+      setCurrentSessionId(newSessionId)
+      setEmptySessions(prev => [...prev, newSessionId])
     }
+    
+    setDeleteModalSessionId(null)
     setActiveDropdownId(null)
+  }
+
+  const clearChat = async () => {
+    setDeleteModalSessionId(currentSessionId)
+  }
+
+  const handleRenameSession = () => {
+    if (!renameInput.trim() || !renameModalSessionId) {
+      setRenameModalSessionId(null)
+      return
+    }
+    const newTitles = { ...sessionTitles, [renameModalSessionId]: renameInput }
+    setSessionTitles(newTitles)
+    localStorage.setItem('soulchat-titles', JSON.stringify(newTitles))
+    setRenameModalSessionId(null)
   }
 
   useEffect(() => {
@@ -243,8 +257,46 @@ export function ChatPage() {
   }
 
   return (
-    <div className="auth-layout__page auth-layout__page--chat">
-      <div className="chat-grid">
+    <>
+      {/* Delete Confirmation Modal */}
+      {deleteModalSessionId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <Motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="landing-mockup" style={{ padding: '2rem', maxWidth: '350px', width: '90%', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: '#d35d6e' }}><Trash2 size={32} /></div>
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--landing-text)', marginBottom: '0.75rem' }}>Chat delete</h3>
+            <p style={{ color: 'var(--landing-text-muted)', marginBottom: '1.5rem', fontSize: '0.85rem' }}>Are you sure you want to delete this chat?</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button className="landing-btn" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--landing-text)', flex: 1, justifyContent: 'center' }} onClick={() => setDeleteModalSessionId(null)}>Cancel</button>
+              <button className="landing-btn" style={{ background: 'rgba(211,93,110,0.15)', color: '#d35d6e', border: '1px solid rgba(211,93,110,0.3)', flex: 1, justifyContent: 'center' }} onClick={confirmDeleteSession}>OK</button>
+            </div>
+          </Motion.div>
+        </div>
+      )}
+
+      {/* Rename Chat Modal */}
+      {renameModalSessionId && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+          <Motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="landing-mockup" style={{ padding: '2rem', maxWidth: '350px', width: '90%' }}>
+            <h3 style={{ fontSize: '1.15rem', color: 'var(--landing-text)', marginBottom: '1rem' }}>Rename Chat</h3>
+            <input 
+              type="text" 
+              value={renameInput} 
+              onChange={e => setRenameInput(e.target.value)} 
+              placeholder="Enter new name..."
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--landing-glass-border)', color: 'var(--landing-text)', marginBottom: '1.5rem', fontSize: '0.9rem' }}
+              autoFocus
+              onKeyDown={e => { if(e.key === 'Enter') handleRenameSession() }}
+            />
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button className="landing-btn" style={{ background: 'transparent', padding: '0.5rem 1rem' }} onClick={() => setRenameModalSessionId(null)}>Cancel</button>
+              <button className="landing-btn landing-btn--primary" style={{ padding: '0.5rem 1rem' }} onClick={handleRenameSession}>Save</button>
+            </div>
+          </Motion.div>
+        </div>
+      )}
+
+      <div className="auth-layout__page auth-layout__page--chat">
+        <div className="chat-grid">
         {/* Mobile Backdrop */}
         {showMobileSidebar && (
           <div 
@@ -347,7 +399,7 @@ export function ChatPage() {
                 <p style={{ fontSize: '0.85rem', color: 'var(--landing-text-muted)', fontStyle: 'italic' }}>No previous conversations.</p>
               )}
               {sessionGroups.map(group => (
-                <div key={group.id} style={{ position: 'relative', width: '100%' }}>
+                <div key={group.id} style={{ position: 'relative', width: '100%', zIndex: activeDropdownId === group.id ? 50 : 1 }}>
                   <button
                     onClick={() => {
                       setCurrentSessionId(group.id)
@@ -376,7 +428,7 @@ export function ChatPage() {
                     }}
                   >
                     <span style={{ fontSize: '0.85rem', color: currentSessionId === group.id ? 'var(--landing-violet)' : 'var(--landing-text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                      {group.firstMessage}
+                      {sessionTitles[group.id] || group.firstMessage}
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--landing-text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem' }}>
                       <Clock size={12} /> {group.date.toLocaleDateString()}
@@ -416,13 +468,51 @@ export function ChatPage() {
                         background: 'var(--landing-surface)', 
                         border: '1px solid rgba(255,255,255,0.1)', 
                         borderRadius: '8px', 
-                        padding: '0.5rem', 
+                        padding: '0.4rem', 
                         zIndex: 100,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                        minWidth: '120px'
+                        minWidth: '130px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.2rem'
                       }}>
                         <button
-                          onClick={(e) => deleteSession(e, group.id)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setRenameInput(sessionTitles[group.id] || group.firstMessage)
+                            setRenameModalSessionId(group.id)
+                            setActiveDropdownId(null)
+                          }}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.5rem', 
+                            background: 'none', 
+                            border: 'none', 
+                            color: 'var(--landing-text)', 
+                            cursor: 'pointer', 
+                            fontSize: '0.85rem', 
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                            padding: '0.5rem',
+                            borderRadius: '4px',
+                            fontWeight: 500
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Edit2 size={14} /> Rename
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            // Force state update safely
+                            setTimeout(() => {
+                              setDeleteModalSessionId(group.id)
+                            }, 0)
+                            setActiveDropdownId(null)
+                          }}
                           style={{ 
                             display: 'flex', 
                             alignItems: 'center', 
@@ -434,7 +524,7 @@ export function ChatPage() {
                             fontSize: '0.85rem', 
                             whiteSpace: 'nowrap',
                             width: '100%',
-                            padding: '0.4rem',
+                            padding: '0.5rem',
                             borderRadius: '4px',
                             fontWeight: 500
                           }}
@@ -612,5 +702,8 @@ export function ChatPage() {
         </Motion.section>
       </div>
     </div>
+    </>
   )
 }
+
+export default ChatPage
