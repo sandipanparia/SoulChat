@@ -2268,6 +2268,30 @@
   transform: scale(1.15);
 }
 
+/* Real Chat Messages */
+.chat-msg-bubble {
+  max-width: 75%;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  backdrop-filter: blur(8px);
+}
+
+.chat-msg-bubble--user {
+  background: linear-gradient(135deg, var(--landing-violet) 0%, #a67bd4 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(139,108,199,0.3);
+}
+
+.chat-msg-bubble--ai {
+  background: rgba(255,255,255,0.65);
+  color: var(--landing-text);
+  border: 1px solid rgba(200,184,232,0.3);
+  box-shadow: 0 2px 8px rgba(45,36,56,0.06);
+}
+
 /* Typing indicator — bouncing dots */
 .typing-indicator {
   display: flex;
@@ -2643,6 +2667,10 @@
 [data-theme="dark"] .chat-area__empty-card {
   background: rgba(20, 18, 28, 0.6);
   border-color: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .chat-msg-bubble--ai {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 [data-theme="dark"] .chat-area__prompt-btn {
   background: rgba(255, 255, 255, 0.06);

@@ -292,22 +292,7 @@ export function ChatPage() {
                       <X size={12} />
                     </button>
                   )}
-                  <div style={{
-                    maxWidth: '75%',
-                    padding: '0.875rem 1rem',
-                    borderRadius: '12px',
-                    background: msg.sender === 'user'
-                      ? 'linear-gradient(135deg, var(--landing-violet) 0%, #a67bd4 100%)'
-                      : 'rgba(255,255,255,0.65)',
-                    color: msg.sender === 'user' ? '#fff' : 'var(--landing-text)',
-                    border: msg.sender === 'user' ? 'none' : '1px solid rgba(200,184,232,0.3)',
-                    backdropFilter: 'blur(8px)',
-                    boxShadow: msg.sender === 'user'
-                      ? '0 4px 14px rgba(139,108,199,0.3)'
-                      : '0 2px 8px rgba(45,36,56,0.06)',
-                    fontSize: '0.9rem',
-                    lineHeight: '1.6',
-                  }}>
+                  <div className={`chat-msg-bubble chat-msg-bubble--${msg.sender}`}>
                     {msg.text}
                   </div>
                   {/* Delete button — right side for AI messages */}
