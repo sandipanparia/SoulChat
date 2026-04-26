@@ -26,7 +26,7 @@ router.get('/:avatarId', async (req, res) => {
 router.post('/:avatarId', async (req, res) => {
   try {
     const { avatarId } = req.params
-    const { sender, text } = req.body
+    const { sender, text, sessionId } = req.body
     
     if (!sender || !text) {
       return res.status(400).json({ message: 'Sender and text required' })
@@ -35,7 +35,8 @@ router.post('/:avatarId', async (req, res) => {
     const newMsg = await Message.create({
       avatarId,
       sender,
-      text
+      text,
+      sessionId: sessionId || 'default'
     })
 
     res.status(201).json({
@@ -63,6 +64,18 @@ router.delete('/single/:messageId', async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Server error deleting message' })
+  }
+})
+
+// Delete an entire session for a specific avatar
+router.delete('/session/:avatarId/:sessionId', async (req, res) => {
+  try {
+    const { avatarId, sessionId } = req.params
+    await Message.deleteMany({ avatarId, sessionId })
+    res.status(200).json({ message: 'Session deleted' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error deleting session messages' })
   }
 })
 

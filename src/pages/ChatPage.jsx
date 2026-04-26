@@ -2,7 +2,7 @@ import '../landing.css'
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
-import { Mic, SendHorizonal, HeartHandshake, Trash2, X } from 'lucide-react'
+import { Mic, SendHorizonal, HeartHandshake, Trash2, X, MessageSquarePlus, Clock, Menu, MoreVertical } from 'lucide-react'
 import { chatPrompts, memoryProfiles } from '../data/soulData'
 import { getApiBaseUrl } from '../utils/api'
 
@@ -15,9 +15,64 @@ export function ChatPage() {
   }, [avatarId])
 
   const [messages, setMessages] = useState([])
+  const [currentSessionId, setCurrentSessionId] = useState(() => Date.now().toString())
+  const [emptySessions, setEmptySessions] = useState([])
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false)
+  const [activeDropdownId, setActiveDropdownId] = useState(null)
   const [inputText, setInputText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesContainerRef = useRef(null)
+
+  const sessionGroups = useMemo(() => {
+    const groups = {}
+    messages.forEach(msg => {
+      const sid = msg.sessionId || 'default'
+      if (!groups[sid]) {
+        groups[sid] = {
+          id: sid,
+          messages: [],
+          firstMessage: msg.text,
+          date: new Date(msg.createdAt || msg.id || Date.now())
+        }
+      }
+      groups[sid].messages.push(msg)
+    })
+    
+    // Ensure any created empty sessions remain in the sidebar
+    emptySessions.forEach(sid => {
+      if (!groups[sid]) {
+        groups[sid] = {
+          id: sid,
+          messages: [],
+          firstMessage: 'New Chat',
+          date: new Date(Number(sid)) // sid is Date.now().toString()
+        }
+      }
+    })
+
+    // Always show the currently active session in the sidebar even if it's empty
+    if (!groups[currentSessionId]) {
+      groups[currentSessionId] = {
+        id: currentSessionId,
+        messages: [],
+        firstMessage: 'New Chat',
+        date: new Date()
+      }
+    }
+
+    return Object.values(groups).sort((a, b) => b.date - a.date) // newest session first
+  }, [messages, currentSessionId, emptySessions])
+
+  const handleNewChat = () => {
+    const newId = Date.now().toString()
+    setEmptySessions(prev => [...prev, newId])
+    setCurrentSessionId(newId)
+    setShowMobileSidebar(false)
+  }
+
+  const currentSessionMessages = useMemo(() => {
+    return messages.filter(m => (m.sessionId || 'default') === currentSessionId)
+  }, [messages, currentSessionId])
 
   useEffect(() => {
     const container = messagesContainerRef.current
@@ -29,18 +84,39 @@ export function ChatPage() {
   const apiBaseUrl = getApiBaseUrl()
 
   const clearChat = async () => {
-    if (!confirm('Delete all messages? This cannot be undone.')) return
-    
-    // Clear from localStorage
-    localStorage.removeItem(`soulchat-msgs-${avatarId}`)
-    setMessages([])
-    
-    // Clear from MongoDB
-    try {
-      await fetch(`${apiBaseUrl}/api/messages/${avatarId}`, { method: 'DELETE' })
-    } catch (err) {
-      console.error('Failed to delete messages from server:', err)
+    // We can remove the old "Delete Chat" button from the main header since we have three-dot menus now, 
+    // or keep it. If we keep it, it uses the same logic.
+    deleteSession(null, currentSessionId)
+  }
+
+  const deleteSession = async (e, sessionId) => {
+    if (e) e.stopPropagation()
+    if (!confirm('Delete this chat session? This cannot be undone.')) {
+      setActiveDropdownId(null)
+      return
     }
+    
+    // Clear from localStorage for target session
+    const local = JSON.parse(localStorage.getItem(`soulchat-msgs-${avatarId}`) || '[]')
+    const kept = local.filter(m => (m.sessionId || 'default') !== sessionId)
+    localStorage.setItem(`soulchat-msgs-${avatarId}`, JSON.stringify(kept))
+    
+    // Update state
+    setMessages(kept)
+    setEmptySessions(prev => prev.filter(id => id !== sessionId))
+    
+    // Clear from MongoDB for target session
+    try {
+      await fetch(`${apiBaseUrl}/api/messages/session/${avatarId}/${sessionId}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error('Failed to delete session from server:', err)
+    }
+    
+    // If we just deleted the active session, switch to a new one
+    if (currentSessionId === sessionId) {
+      setCurrentSessionId(Date.now().toString())
+    }
+    setActiveDropdownId(null)
   }
 
   useEffect(() => {
@@ -70,11 +146,20 @@ export function ChatPage() {
 
           setMessages(dbMessages)
           localStorage.setItem(`soulchat-msgs-${avatarId}`, JSON.stringify(dbMessages))
+          
+          if (dbMessages.length > 0) {
+            const latestSession = dbMessages[dbMessages.length - 1].sessionId || 'default'
+            setCurrentSessionId(latestSession)
+          }
           return
         }
       } catch (err) {}
       
       setMessages(local)
+      if (local.length > 0) {
+        const latestSession = local[local.length - 1].sessionId || 'default'
+        setCurrentSessionId(latestSession)
+      }
     }
     loadMessages()
   }, [avatarId, apiBaseUrl])
@@ -114,7 +199,7 @@ export function ChatPage() {
   const handleSend = async () => {
     if (!inputText.trim()) return
     
-    const userMsg = { text: inputText, sender: 'user', id: Date.now() }
+    const userMsg = { text: inputText, sender: 'user', id: Date.now(), sessionId: currentSessionId }
     saveMessage(userMsg)
     const currentInput = inputText
     setInputText('')
@@ -141,16 +226,16 @@ export function ChatPage() {
 
       if (response.ok) {
         const data = await response.json()
-        const aiResponse = { text: data.reply, sender: 'ai', id: Date.now() + 1 }
+        const aiResponse = { text: data.reply, sender: 'ai', id: Date.now() + 1, sessionId: currentSessionId }
         saveMessage(aiResponse)
       } else {
         const errData = await response.json().catch(() => ({}))
-        const aiResponse = { text: errData.message || `I'm having trouble connecting right now. Please try again in a moment.`, sender: 'ai', id: Date.now() + 1 }
+        const aiResponse = { text: errData.message || `I'm having trouble connecting right now. Please try again in a moment.`, sender: 'ai', id: Date.now() + 1, sessionId: currentSessionId }
         saveMessage(aiResponse)
       }
     } catch (err) {
       console.error('AI chat error:', err)
-      const aiResponse = { text: `I'm here with you, but my connection seems to be off. Give me a moment and try again.`, sender: 'ai', id: Date.now() + 1 }
+      const aiResponse = { text: `I'm here with you, but my connection seems to be off. Give me a moment and try again.`, sender: 'ai', id: Date.now() + 1, sessionId: currentSessionId }
       saveMessage(aiResponse)
     } finally {
       setIsTyping(false)
@@ -160,14 +245,60 @@ export function ChatPage() {
   return (
     <div className="auth-layout__page auth-layout__page--chat">
       <div className="chat-grid">
-        {/* Left — Profile Card */}
+        {/* Mobile Backdrop */}
+        {showMobileSidebar && (
+          <div 
+            className="mobile-sidebar-backdrop"
+            onClick={() => setShowMobileSidebar(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 999,
+              backdropFilter: 'blur(4px)'
+            }}
+          />
+        )}
+
+        {/* Left — Profile Card & History */}
         <Motion.aside
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="landing-mockup"
-          style={{ padding: '1.5rem', alignSelf: 'start' }}
+          className={`landing-mockup chat-sidebar-scroll ${showMobileSidebar ? 'chat-sidebar--mobile-open' : ''}`}
+          style={{ 
+            padding: '1.5rem', 
+            alignSelf: 'start', 
+            height: '100%', 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column' 
+          }}
         >
+          {/* Mobile Close Button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <button 
+              className="mobile-sidebar-close"
+              onClick={() => setShowMobileSidebar(false)}
+              style={{ 
+                background: 'rgba(255,255,255,0.1)', 
+                border: '1px solid rgba(255,255,255,0.2)', 
+                borderRadius: '50%', 
+                color: 'var(--landing-text)', 
+                cursor: 'pointer', 
+                padding: '0.4rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
           <img
             src={profile.image}
             alt={profile.name}
@@ -196,6 +327,129 @@ export function ChatPage() {
           <p style={{ fontSize: '0.875rem', color: 'var(--landing-text-muted)', margin: 0, lineHeight: 1.6 }}>
             {profile.tone}
           </p>
+
+          {/* New Chat Button & History */}
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--landing-glass-border)' }}>
+            <button
+              onClick={handleNewChat}
+              className="landing-btn landing-btn--primary"
+              style={{ width: '100%', marginBottom: '1.5rem', justifyContent: 'center' }}
+            >
+              <MessageSquarePlus size={16} /> New Chat
+            </button>
+            
+            <h3 style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--landing-text-muted)', marginBottom: '1rem', fontWeight: 600 }}>
+              Recent Conversations
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }} className="chat-messages-scroll">
+              {sessionGroups.length === 0 && (
+                <p style={{ fontSize: '0.85rem', color: 'var(--landing-text-muted)', fontStyle: 'italic' }}>No previous conversations.</p>
+              )}
+              {sessionGroups.map(group => (
+                <div key={group.id} style={{ position: 'relative', width: '100%' }}>
+                  <button
+                    onClick={() => {
+                      setCurrentSessionId(group.id)
+                      setShowMobileSidebar(false)
+                      setActiveDropdownId(null)
+                    }}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      padding: '0.75rem',
+                      paddingRight: '2rem', // leave space for three dots
+                      borderRadius: '8px',
+                      background: currentSessionId === group.id ? 'rgba(167, 139, 218, 0.15)' : 'transparent',
+                      border: currentSessionId === group.id ? '1px solid rgba(167, 139, 218, 0.3)' : '1px solid transparent',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                      width: '100%',
+                    }}
+                    onMouseEnter={e => {
+                      if (currentSessionId !== group.id) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                    }}
+                    onMouseLeave={e => {
+                      if (currentSessionId !== group.id) e.currentTarget.style.background = 'transparent'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem', color: currentSessionId === group.id ? 'var(--landing-violet)' : 'var(--landing-text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                      {group.firstMessage}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--landing-text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem' }}>
+                      <Clock size={12} /> {group.date.toLocaleDateString()}
+                    </span>
+                  </button>
+
+                  {/* Three Dots Menu */}
+                  <div style={{ position: 'absolute', right: '0.25rem', top: '50%', transform: 'translateY(-50%)' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdownId(activeDropdownId === group.id ? null : group.id);
+                      }}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: 'var(--landing-text-muted)', 
+                        cursor: 'pointer', 
+                        padding: '0.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '4px'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                    
+                    {/* Dropdown Popup */}
+                    {activeDropdownId === group.id && (
+                      <div style={{ 
+                        position: 'absolute', 
+                        right: 0, 
+                        top: '100%', 
+                        background: 'var(--landing-surface)', 
+                        border: '1px solid rgba(255,255,255,0.1)', 
+                        borderRadius: '8px', 
+                        padding: '0.5rem', 
+                        zIndex: 100,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        minWidth: '120px'
+                      }}>
+                        <button
+                          onClick={(e) => deleteSession(e, group.id)}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.5rem', 
+                            background: 'none', 
+                            border: 'none', 
+                            color: '#d35d6e', 
+                            cursor: 'pointer', 
+                            fontSize: '0.85rem', 
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                            padding: '0.4rem',
+                            borderRadius: '4px',
+                            fontWeight: 500
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(211,93,110,0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Trash2 size={14} /> Delete Chat
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </Motion.aside>
 
         {/* Right — Chat Area */}
@@ -208,6 +462,13 @@ export function ChatPage() {
         >
           {/* Mobile-only compact profile header */}
           <div className="chat-mobile-header">
+            <button 
+              className="mobile-sidebar-toggle"
+              onClick={() => setShowMobileSidebar(true)}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--landing-glass-border)', borderRadius: '8px', padding: '0.4rem', color: 'var(--landing-text)', cursor: 'pointer', marginRight: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Menu size={18} />
+            </button>
             <img
               src={profile.image}
               alt={profile.name}
@@ -219,7 +480,7 @@ export function ChatPage() {
             </div>
           </div>
           {/* Chat Header with Clear button */}
-          {messages.length > 0 && (
+          {currentSessionMessages.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
               <button
                 onClick={clearChat}
@@ -248,11 +509,11 @@ export function ChatPage() {
                   e.currentTarget.style.borderColor = 'rgba(211,93,110,0.2)'
                 }}
               >
-                <Trash2 size={13} /> Clear Chat
+                <Trash2 size={13} /> Delete Chat
               </button>
             </div>
           )}
-          {messages.length === 0 ? (
+          {currentSessionMessages.length === 0 ? (
             /* Empty state */
             <div className="chat-area__empty">
               <div className="chat-area__empty-card">
@@ -270,7 +531,7 @@ export function ChatPage() {
           ) : (
             /* Messages List */
             <div ref={messagesContainerRef} className="chat-messages-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '1rem', minHeight: 0 }}>
-              {messages.map((msg) => (
+              {currentSessionMessages.map((msg) => (
                 <div
                   key={msg.id || msg._id}
                   className="chat-msg-row"
@@ -322,7 +583,7 @@ export function ChatPage() {
 
           {/* Prompts & Input */}
           <div className="chat-area__bottom" style={{ marginTop: 'auto' }}>
-            {messages.length === 0 && (
+            {currentSessionMessages.length === 0 && (
               <div className="chat-area__prompts">
                 {chatPrompts.map((prompt) => (
                   <button key={prompt} className="chat-area__prompt-btn" onClick={() => setInputText(prompt)}>

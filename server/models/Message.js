@@ -16,6 +16,10 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    sessionId: {
+      type: String,
+      default: 'default',
+    },
   },
   {
     timestamps: true,

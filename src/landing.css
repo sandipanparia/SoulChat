@@ -2085,9 +2085,31 @@
     height: 100%;
   }
 
-  /* Hide the full profile sidebar on mobile */
-  .chat-grid > .landing-mockup:first-child {
-    display: none;
+  /* Off-canvas sidebar for mobile */
+  .chat-grid > .chat-sidebar-scroll {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh !important;
+    z-index: 1000;
+    border-radius: 0;
+    transition: left 0.3s ease;
+    background: var(--landing-surface);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .chat-grid > .chat-sidebar-scroll.chat-sidebar--mobile-open {
+    left: 0;
+  }
+
+  .mobile-sidebar-toggle {
+    display: flex !important;
+  }
+
+  .mobile-sidebar-close {
+    display: block !important;
   }
 
   .chat-area {
@@ -2721,3 +2743,8 @@
   background: rgba(20, 18, 28, 0.6) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
+
+/* Hide mobile toggles on desktop */
+.mobile-sidebar-toggle, .mobile-sidebar-close { display: none; }
+
+

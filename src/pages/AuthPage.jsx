@@ -402,6 +402,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
               {googleClientId ? (
                 <div className="auth-card__google-wrap">
                   <GoogleLogin
+                    key={isLogin ? 'login' : 'signup'}
                     onSuccess={handleGoogleSuccess}
                     onError={() =>
                       setStatus({
