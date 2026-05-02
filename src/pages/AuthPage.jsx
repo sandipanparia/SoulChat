@@ -9,6 +9,40 @@ import {
 } from 'lucide-react'
 import { getApiBaseUrl } from '../utils/api'
 
+/**
+ * Decode a JWT payload without verifying the signature.
+ * Used only for the offline/local-auth fallback so we can
+ * extract the user's name, email, and picture from the
+ * Google ID-token when the backend is unreachable.
+ */
+function decodeJwtPayload(token) {
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(''),
+    )
+    return JSON.parse(jsonPayload)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Check whether the Google Client ID looks like a valid
+ * OAuth 2.0 Client ID rather than a placeholder value.
+ */
+function isValidGoogleClientId(id) {
+  if (!id || typeof id !== 'string') return false
+  // Reject common placeholder patterns
+  if (/xxxxxxxx|your[- _]|<|>|placeholder/i.test(id)) return false
+  // Must match the typical Google Client-ID format
+  return /^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(id)
+}
+
 export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
   const [mode, setMode] = useState('login')
   const [formData, setFormData] = useState({
@@ -25,6 +59,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
   const navigate = useNavigate()
   const apiBaseUrl = getApiBaseUrl()
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const googleClientIdValid = isValidGoogleClientId(googleClientId)
   const minProcessingDelayMs = 1200
 
   // When user switches to login mode, ask browser to show saved credentials popup
@@ -258,7 +293,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
   async function handleGoogleSuccess(credentialResponse) {
     if (!credentialResponse.credential) {
-      setStatus({ loading: false, error: 'Google sign-up failed. Please try again.', success: '' })
+      setStatus({ loading: false, error: 'Google sign-in failed. No credential received. Please try again.', success: '' })
       return
     }
 
@@ -273,12 +308,12 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Google sign-up failed.')
+        throw new Error(data.message || 'Google sign-in failed.')
       }
 
       localStorage.removeItem('soulchat-avatars') // Fresh start for new session
       localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
-      setStatus({ loading: false, error: '', success: 'Google sign-up successful.' })
+      setStatus({ loading: false, error: '', success: 'Google sign-in successful.' })
       onAuthSuccess()
       navigate(redirectTo, { replace: true })
     } catch (error) {
@@ -286,15 +321,19 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         error.name === 'TypeError' &&
         (error.message === 'Failed to fetch' || error.message.includes('NetworkError'))
       ) {
-        // Backend unreachable — proceed with local auth for Google
-        // We simulate saving a Google user to local storage.
+        // Backend unreachable — decode the Google JWT locally and
+        // use the real user info instead of a generic placeholder.
+        const decoded = decodeJwtPayload(credentialResponse.credential)
+        const googleEmail = (decoded?.email || 'guest@google.com').toLowerCase().trim()
+        const googleName = decoded?.name || 'Google User'
+        const googlePic = decoded?.picture || ''
+
         const USERS_KEY = 'soulchat-users'
         const stored = JSON.parse(localStorage.getItem(USERS_KEY) || '[]')
-        const googleEmail = 'guest@google.com'
         let existingUser = stored.find((u) => u.email === googleEmail)
-        
+
         if (!existingUser) {
-          existingUser = { fullName: 'Google User', email: googleEmail }
+          existingUser = { fullName: googleName, email: googleEmail, profilePic: googlePic }
           stored.push(existingUser)
           localStorage.setItem(USERS_KEY, JSON.stringify(stored))
         }
@@ -310,10 +349,18 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
     }
   }
 
+  function handleGoogleError() {
+    setStatus({
+      loading: false,
+      error: 'Google sign-in could not be completed. Please check that third-party cookies are enabled in your browser, or try a different sign-in method.',
+      success: '',
+    })
+  }
+
   function handleGoogleUnavailable() {
     setStatus({
       loading: false,
-      error: 'Google authentication is temporarily unavailable.',
+      error: 'Google authentication is not configured. Please set a valid VITE_GOOGLE_CLIENT_ID in your .env file.',
       success: '',
     })
   }
@@ -399,18 +446,12 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
             {/* Google SSO */}
             <div className="auth-card__google">
-              {googleClientId ? (
+              {googleClientIdValid ? (
                 <div className="auth-card__google-wrap">
                   <GoogleLogin
                     key={isLogin ? 'login' : 'signup'}
                     onSuccess={handleGoogleSuccess}
-                    onError={() =>
-                      setStatus({
-                        loading: false,
-                        error: `Google ${isLogin ? 'login' : 'sign-up'} could not be completed.`,
-                        success: '',
-                      })
-                    }
+                    onError={handleGoogleError}
                     text={isLogin ? 'signin_with' : 'signup_with'}
                     shape="pill"
                     width="320"

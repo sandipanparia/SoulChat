@@ -246,7 +246,7 @@ function HeroSection() {
                   <HeartHandshake size={24} />
                 </div>
                 <div>
-                  <p className="landing-mockup__avatar-name">Amara</p>
+                  <p className="landing-mockup__avatar-name">Silviya</p>
                   <p className="landing-mockup__avatar-relation">Mother • Memory Avatar</p>
                 </div>
                 <span className="landing-mockup__avatar-status">Active</span>
