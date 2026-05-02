@@ -1,6 +1,6 @@
 import '../landing.css'
 import { useState, useEffect } from 'react'
-import { GoogleLogin } from '@react-oauth/google'
+import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion as Motion } from 'framer-motion'
 import {
@@ -292,19 +292,28 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
     }
   }
 
-  async function handleGoogleSuccess(credentialResponse) {
-    if (!credentialResponse.credential) {
-      setStatus({ loading: false, error: 'Google sign-in failed. No credential received. Please try again.', success: '' })
-      return
-    }
-
+  async function handleGoogleSuccess(tokenResponse) {
     setStatus({ loading: true, error: '', success: '' })
 
     try {
+      // Fetch user info from Google using the access token
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      })
+      if (!userInfoRes.ok) throw new Error('Failed to get Google user info.')
+      const googleUser = await userInfoRes.json()
+
+      // Send user info to our backend
       const response = await fetch(`${apiBaseUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credentialResponse.credential }),
+        body: JSON.stringify({
+          googleUser: {
+            email: googleUser.email,
+            name: googleUser.name,
+            picture: googleUser.picture,
+          },
+        }),
       })
       const data = await response.json()
 
@@ -312,7 +321,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         throw new Error(data.message || 'Google sign-in failed.')
       }
 
-      localStorage.removeItem('soulchat-avatars') // Fresh start for new session
+      localStorage.removeItem('soulchat-avatars')
       localStorage.setItem('soulchat-user', JSON.stringify({ fullName: data.user.fullName, email: data.user.email, profilePic: data.user.profilePic }))
       setStatus({ loading: false, error: '', success: 'Google sign-in successful.' })
       onAuthSuccess()
@@ -322,12 +331,24 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
         error.name === 'TypeError' &&
         (error.message === 'Failed to fetch' || error.message.includes('NetworkError'))
       ) {
-        // Backend unreachable — decode the Google JWT locally and
-        // use the real user info instead of a generic placeholder.
-        const decoded = decodeJwtPayload(credentialResponse.credential)
-        const googleEmail = (decoded?.email || 'guest@google.com').toLowerCase().trim()
-        const googleName = decoded?.name || 'Google User'
-        const googlePic = decoded?.picture || ''
+        // Backend unreachable — use info from Google userinfo API
+        let googleEmail = 'guest@google.com'
+        let googleName = 'Google User'
+        let googlePic = ''
+
+        try {
+          const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+          })
+          if (userInfoRes.ok) {
+            const googleUser = await userInfoRes.json()
+            googleEmail = (googleUser.email || googleEmail).toLowerCase().trim()
+            googleName = googleUser.name || googleName
+            googlePic = googleUser.picture || googlePic
+          }
+        } catch {
+          // Use defaults
+        }
 
         const USERS_KEY = 'soulchat-users'
         const stored = JSON.parse(localStorage.getItem(USERS_KEY) || '[]')
@@ -365,6 +386,11 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
       success: '',
     })
   }
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: handleGoogleError,
+  })
 
   const sideFeatures = [
     { icon: Heart, title: 'Preserve Memories', desc: 'Keep stories, letters, and voice notes in one safe, gentle place.' },
@@ -447,30 +473,16 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
 
             {/* Google SSO */}
             <div className="auth-card__google">
-              {googleClientIdValid ? (
-                <div className="auth-card__google-wrap">
-                  <GoogleLogin
-                    key={isLogin ? 'login' : 'signup'}
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    text={isLogin ? 'signin_with' : 'signup_with'}
-                    shape="pill"
-                    width="320"
-                    auto_select={false}
-                    useOneTap={false}
-                  />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleGoogleUnavailable}
-                  className="auth-card__google-btn"
-                  id="auth-google-btn"
-                >
-                  <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                  Continue with Google
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={googleClientIdValid ? googleLogin : handleGoogleUnavailable}
+                className="auth-card__google-btn"
+                id="auth-google-btn"
+                disabled={status.loading}
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                {isLogin ? 'Sign in with Google' : 'Sign up with Google'}
+              </button>
             </div>
 
             {/* Divider */}

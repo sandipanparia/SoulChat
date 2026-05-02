@@ -98,31 +98,41 @@ router.post('/login', async (req, res) => {
 
 router.post('/google', async (req, res) => {
   try {
-    const { credential } = req.body
+    const { credential, googleUser } = req.body
 
-    if (!credential) {
-      return res.status(400).json({ message: 'Google credential is required.' })
+    let email, name
+
+    if (googleUser && googleUser.email) {
+      // Access token flow — user info already fetched client-side from Google API
+      email = googleUser.email
+      name = googleUser.name || email.split('@')[0]
+    } else if (credential) {
+      // ID token flow (legacy) — verify the token server-side
+      if (!GOOGLE_CLIENT_ID) {
+        return res.status(500).json({ message: 'Google login is not configured on server.' })
+      }
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      })
+      const payload = ticket.getPayload()
+
+      if (!payload?.email || !payload?.name) {
+        return res.status(400).json({ message: 'Unable to read Google account details.' })
+      }
+      email = payload.email
+      name = payload.name
+    } else {
+      return res.status(400).json({ message: 'Google credential or user info is required.' })
     }
-    if (!GOOGLE_CLIENT_ID) {
-      return res.status(500).json({ message: 'Google login is not configured on server.' })
-    }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
-    })
-    const payload = ticket.getPayload()
-
-    if (!payload?.email || !payload?.name) {
-      return res.status(400).json({ message: 'Unable to read Google account details.' })
-    }
-
-    const normalizedEmail = payload.email.toLowerCase().trim()
+    const normalizedEmail = email.toLowerCase().trim()
     let user = await User.findOne({ email: normalizedEmail })
 
     if (!user) {
       user = await User.create({
-        fullName: payload.name,
+        fullName: name,
         email: normalizedEmail,
       })
     }
