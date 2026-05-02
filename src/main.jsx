@@ -6,7 +6,7 @@ import { ThemeProvider } from './utils/ThemeContext'
 import './index.css'
 import App from './App.jsx'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1075452650948-c3kinkp9imgn4ikumrmifojtn4eaj9ce.apps.googleusercontent.com'
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
 
 const appTree = googleClientId ? (
   <GoogleOAuthProvider clientId={googleClientId}>

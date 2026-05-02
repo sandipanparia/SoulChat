@@ -6,8 +6,7 @@ import fs from 'fs'
 import path from 'path'
 
 const router = express.Router()
-const GOOGLE_CLIENT_ID_FALLBACK = '1075452650948-c3kinkp9imgn4ikumrmifojtn4eaj9ce.apps.googleusercontent.com'
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_FALLBACK)
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 router.post('/signup', async (req, res) => {
   try {
@@ -100,14 +99,13 @@ router.post('/google', async (req, res) => {
     if (!credential) {
       return res.status(400).json({ message: 'Google credential is required.' })
     }
-    const effectiveGoogleClientId = process.env.GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_FALLBACK
-    if (!effectiveGoogleClientId) {
+    if (!process.env.GOOGLE_CLIENT_ID) {
       return res.status(500).json({ message: 'Google login is not configured on server.' })
     }
 
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: effectiveGoogleClientId,
+      audience: process.env.GOOGLE_CLIENT_ID,
     })
     const payload = ticket.getPayload()
 
