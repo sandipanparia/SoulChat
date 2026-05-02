@@ -6,7 +6,7 @@ import fs from 'fs'
 import path from 'path'
 
 const router = express.Router()
-const GOOGLE_CLIENT_ID_FALLBACK = '1075452650948-6lopcc3754071e8lnjr2mumn1e9egk5c.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID_FALLBACK = '1075452650948-c3kinkp9imgn4ikumrmifojtn4eaj9ce.apps.googleusercontent.com'
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_FALLBACK)
 
 router.post('/signup', async (req, res) => {
