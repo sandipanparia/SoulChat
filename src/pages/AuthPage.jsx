@@ -58,7 +58,7 @@ export function AuthPage({ onAuthSuccess, redirectTo = '/home' }) {
   const isLogin = mode === 'login'
   const navigate = useNavigate()
   const apiBaseUrl = getApiBaseUrl()
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1075452650948-6lopcc3754071e8lnjr2mumn1e9egk5c.apps.googleusercontent.com'
   const googleClientIdValid = isValidGoogleClientId(googleClientId)
   const minProcessingDelayMs = 1200
 
